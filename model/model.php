@@ -106,11 +106,12 @@ function updateProfile() {
         if ($_FILES['avatar']['size'] <= $avatar_maxsize) {
             $upload = strtolower(substr(strrchr($_FILES['avatar']['name'], '.'), 1));
             if (in_array($upload, $avatar_extensions)) {
-                $path = 'avatars/' . $_SESSION['id'] . '.' . $upload;
+                $file_name = generateRandomString();
+                $path = 'avatars/' . $file_name . '.' . $upload;
                 $uploading = move_uploaded_file($_FILES['avatar']['tmp_name'], $path);
                 if ($uploading) {
                     $update_avatar = $db->prepare('UPDATE accounts SET avatar = ? WHERE id = ?');
-                    $update_avatar->execute(array($_SESSION['id'] . '.' . $upload, $_SESSION['id']));
+                    $update_avatar->execute(array($file_name . '.' . $upload, $_SESSION['id']));
                 }
                 else {
                     return 'Error upload avatar!';
@@ -426,6 +427,9 @@ function getUsergroupById($type) {
         case 1:
             return 'Member';
             break;
+        case 2:
+            return 'Administrator';
+            break;
         default:
             return 'Error!';
     }
@@ -538,4 +542,14 @@ function getOnline() {
     $db = db();
     $online_users = $db->query('SELECT user_id, username FROM online');
     return $online_users;
+}
+
+function generateRandomString($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-*/+';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
 }
