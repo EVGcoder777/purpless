@@ -64,11 +64,13 @@ function accountCreation($a, $b, $c, $d) {
             $check_code = $check_code->fetch();
             if (!empty($check_code['code'])) {
 
-                $create_user = $db->prepare('INSERT INTO accounts(username, usergroup, generator_attempts, password, is_admin, money, reg_ip, last_ip, invited_by, login_datetime, reg_datetime) VALUES (:username, :usergroup, :attempts, :password, :is_admin, :money, :reg_ip, :last_ip, :invited_by, NOW(), NOW())');
+                $create_user = $db->prepare('INSERT INTO accounts(username, avatar, usergroup, generator_attempts, user_dsc, password, is_admin, money, reg_ip, last_ip, invited_by, login_datetime, reg_datetime) VALUES (:username, :avatar, :usergroup, :attempts, :dsc, :password, :is_admin, :money, :reg_ip, :last_ip, :invited_by, NOW(), NOW())');
                 $create_user->execute(array(
                     'username' => $username,
+                    'avatar' => 'default.png',
                     'usergroup' => 1,
                     'attempts' => 1,
+                    'dsc' => 'No description',
                     'password' => $password,
                     'is_admin' => 0,
                     'money' => 50,
@@ -95,10 +97,36 @@ function accountCreation($a, $b, $c, $d) {
     }
 }
 
-function updateProfile($description) {
+function updateProfile() {
     $db = db();
+
+    if (isset($_FILES['avatar']) && !empty($_FILES['avatar']['name'])) {
+        $avatar_maxsize = 2097152;
+        $avatar_extensions = array('jpg', 'jpeg', 'png');
+        if ($_FILES['avatar']['size'] <= $avatar_maxsize) {
+            $upload = strtolower(substr(strrchr($_FILES['avatar']['name'], '.'), 1));
+            if (in_array($upload, $avatar_extensions)) {
+                $path = 'avatars/' . $_SESSION['id'] . '.' . $upload;
+                $uploading = move_uploaded_file($_FILES['avatar']['tmp_name'], $path);
+                if ($uploading) {
+                    $update_avatar = $db->prepare('UPDATE accounts SET avatar = ? WHERE id = ?');
+                    $update_avatar->execute(array($_SESSION['id'] . '.' . $upload, $_SESSION['id']));
+                }
+                else {
+                    return 'Error upload avatar!';
+                }
+            }
+            else {
+                return 'Wrong file extension.';
+            }
+        }
+        else {
+            return 'Your avatar size is too big (MAX 2MO).';
+        }
+    }
+
     if (isset($_POST['user-desc']) && !empty($_POST['user-desc'])) {
-        $description = htmlspecialchars($description);
+        $description = htmlspecialchars($_POST['user-desc']);
         $desc_length = strlen($description);
         if ($desc_length <= 100) {
             $upd_desc = $db->prepare('UPDATE accounts SET user_dsc = ? WHERE id = ?');
@@ -109,6 +137,15 @@ function updateProfile($description) {
             return 'Description is too long.';
         }
     }
+}
+
+function getUserAvatar() {
+    $db = db();
+    $avatar = $db->prepare('SELECT avatar FROM accounts WHERE id = ?');
+    $avatar->execute(array($_SESSION['id']));
+    $avatar = $avatar->fetch();
+
+    return $avatar['avatar'];
 }
 
 function username() {
@@ -415,7 +452,7 @@ function getProfile($uid) {
 $db = db();
 $uid = htmlspecialchars($uid);
 
-$user_info = $db->prepare('SELECT username, usergroup, user_dsc, money, invited_by FROM accounts WHERE id = ?');
+$user_info = $db->prepare('SELECT username, avatar, usergroup, user_dsc, money, invited_by FROM accounts WHERE id = ?');
 $user_info->execute(array($uid));
 $user_info = $user_info->fetch();
 
@@ -423,6 +460,7 @@ $user_info = $user_info->fetch();
 if (!empty($user_info['username'])) {
     $user_array = array(
         'username' => $user_info['username'],
+        'avatar' => $user_info['avatar'],
         'usergroup' => $user_info['usergroup'],
         'description' => $user_info['user_dsc'],
         'money' => $user_info['money'],
@@ -465,4 +503,39 @@ function getGeneratorStory() {
     $story->execute(array($_SESSION['id']));
 
     return $story;
+}
+
+function updateOnline() {
+    $db = db();
+    $time = time();
+    if (isset($_SESSION['id'], $_SESSION['access'])) {
+        $online = $db->prepare('SELECT COUNT(*) FROM online WHERE user_id = ?');
+        $online->execute(array($_SESSION['id']));
+        $online = $online->fetchColumn();
+
+        if ($online == 0) {
+            $online = $db->prepare('INSERT INTO online(user_id, username, last_action) VALUES(:user_id, :username, :last_action)');
+            $online->execute(array(
+               'user_id' => $_SESSION['id'],
+               'username' => getUsernameById($_SESSION['id']),
+                'last_action' => $time
+            ));
+        }
+        else {
+            $online = $db->prepare('UPDATE online SET last_action = ? WHERE user_id = ?');
+            $online->execute(array($time, $_SESSION['id']));
+        }
+    }
+}
+
+function usersListing() {
+    $db = db();
+    $users = $db->query('SELECT * FROM accounts');
+    return $users;
+}
+
+function getOnline() {
+    $db = db();
+    $online_users = $db->query('SELECT user_id, username FROM online');
+    return $online_users;
 }

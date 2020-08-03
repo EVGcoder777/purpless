@@ -53,15 +53,18 @@ function dashboard() {
             $error = $result;
         }
     }
+    updateOnline();
     $items = itemSold();
     $users = usersCount();
     $money = moneyCount();
     $news = getNews();
     $market = getItems();
+    $online = getOnline();
     require('views/dashboard_view.php');
 }
 
 function marketStory() {
+    updateOnline();
     $story = getMarketStory();
     require('views/market_history_view.php');
 }
@@ -77,6 +80,7 @@ function generator() {
             $error = $result;
         }
     }
+    updateOnline();
     generatorAttempts();
     $attempts = generatorUserAttempts();
     $stock = generatorStock();
@@ -85,15 +89,16 @@ function generator() {
 }
 
 function profile() {
+    updateOnline();
     if (isset($_GET['uid']) && !empty($_GET['uid'])) {
         $result = getProfile($_GET['uid']);
         if ($result['result'] == 'success') {
             $data = $result;
             $invites = getUserInvites();
             if (isset($_POST['profile-edit'])) {
-                $result = updateProfile;
+                $result = updateProfile();
                 if ($result == 'success') {
-                    $error = 'Description successfully updated';
+                    $error = 'Profile updated, refreshing...';
                     header('Refresh: 1');
                 }
                 else {
@@ -112,6 +117,7 @@ function profile() {
 }
 
 function createItem() {
+    updateOnline();
     if (isset($_POST['item-name'], $_POST['item-price'], $_POST['item-link'], $_POST['add-item-submit'])) {
         if (!empty($_POST['item-name'] && $_POST['item-price'] && $_POST['item-link'])) {
             $result = insertItem($_POST['item-name'], $_POST['item-price'], $_POST['item-link']);
@@ -128,4 +134,9 @@ function createItem() {
         }
     }
     require('views/create_item_view.php');
+}
+
+function usersList() {
+    $users = usersListing();
+require('views/user_list_view.php');
 }

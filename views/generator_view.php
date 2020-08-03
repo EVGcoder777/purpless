@@ -62,7 +62,7 @@ ob_start();
                         <li class="dropdown nav-item">
                             <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
                                 <div class="photo">
-                                    <img src="../assets/img/anime3.png" alt="M">
+                                    <img src="<?= 'avatars/' . getUserAvatar() ?>" alt="M">
                                 </div>
                                 <b class="caret d-none d-lg-block d-xl-block"></b>
                                 <p class="d-lg-none">
@@ -165,7 +165,7 @@ ob_start();
             <div class="container-fluid">
                 <ul class="nav">
                     <li class="nav-item">
-                        <a href="" class="nav-link">
+                        <a target="_blank" href="https://discord.gg/tNYVY45" class="nav-link">
                             <img width="30" src="img/discord.webp">
                         </a>
                 </ul>

@@ -82,6 +82,15 @@ if (isset($_GET['a'])) {
         }
     }
 
+    elseif ($_GET['a'] == 'users') {
+        if (userAuthorized()) {
+            usersList();
+        }
+        else {
+            header('Location: index.php?a=login');
+        }
+    }
+
     else {
         header('Location: index.php?a=login');
     }
